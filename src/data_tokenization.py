@@ -8,9 +8,7 @@ CLEANED_DATA_PATH = "Q:\Athena\data\cleaned_data\cleaned_human_annotations.csv"
 OUTPUT_PATH = "Q:/Athena/Data/tokenized_data/tokenized_human_annotations.pt"
 
 def load_cleaned_data(filepath):
-    """
-    Load cleaned text data from a CSV file.
-    """
+    
     try:
         data = pd.read_csv(filepath)
         print(f"Loaded data from {filepath}. Total rows: {len(data)}")

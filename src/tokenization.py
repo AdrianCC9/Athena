@@ -4,9 +4,9 @@ from transformers import GPT2Tokenizer
 import os
 
 # Paths
-HUMAN_ANNOTATIONS_PATH = "/Users/adrian/Athena/data/Cleaned Data/cleaned_human_annotations.csv"
-ARTIFICIAL_ANNOTATIONS_PATH = "/Users/adrian/Athena/data/Cleaned Data/cleaned_artificial_annotations.csv"
-OUTPUT_PATH = "/Users/adrian/Athena/data/tokenized_annotations.pt"
+HUMAN_ANNOTATIONS_PATH = "Q:\Athena\data\cleaned_data\cleaned_human_annotations.csv"
+ARTIFICIAL_ANNOTATIONS_PATH = "Q:\Athena\data\cleaned_data\cleaned_artificial_annotations.csv"
+OUTPUT_PATH = r"Q:\Athena\data\tokenized_data\tokenized_human_annotations.pt"
 
 # Parameters
 MAX_LENGTH = 128  # Maximum token length

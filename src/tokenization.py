@@ -4,9 +4,9 @@ from transformers import GPT2Tokenizer
 import os
 
 # Paths
-HUMAN_ANNOTATIONS_PATH = "Q:\Athena\data\cleaned_data\cleaned_human_annotations.csv"
-ARTIFICIAL_ANNOTATIONS_PATH = "Q:\Athena\data\cleaned_data\cleaned_artificial_annotations.csv"
-OUTPUT_PATH = r"Q:\Athena\data\tokenized_data\tokenized_human_annotations.pt"
+HUMAN_ANNOTATIONS_PATH = r"Q:\Athena\data\cleaned_data\cleaned_human_annotations.csv"
+ARTIFICIAL_ANNOTATIONS_PATH = r"Q:\Athena\data\cleaned_data\cleaned_artificial_annotations.csv"
+OUTPUT_PATH = r"Q:\Athena\data\tokenized_data\tokenized_combined_annotations.pt"
 
 # Parameters
 MAX_LENGTH = 128  # Maximum token length
@@ -15,22 +15,34 @@ def load_data(human_path, artificial_path):
     """
     Load and merge human and artificial annotations into a single DataFrame.
     """
+    # Load the data
     human_df = pd.read_csv(human_path)
     artificial_df = pd.read_csv(artificial_path)
-
-    # Combine annotations with preference for human annotations
-    combined_df = artificial_df.copy()
-    combined_df["annotation"] = combined_df["image_id"].map(
-        dict(zip(human_df["image_id"], human_df["annotation"]))
-    ).fillna(combined_df["description"])  # Use human annotations if available, otherwise artificial
+    
+    # Merge dataframes on 'image_id'
+    combined_df = pd.merge(
+        artificial_df[['image_id', 'description']],
+        human_df[['image_id', 'annotation']],
+        on='image_id',
+        how='left'
+    )
+    
+    # Create 'combined_annotation' column with preference for human annotation
+    combined_df['combined_annotation'] = combined_df['annotation'].combine_first(combined_df['description'])
+    
     return combined_df
 
-def tokenize_annotations(data, tokenizer, column_name="annotation"):
+def tokenize_annotations(data, tokenizer, column_name="combined_annotation"):
     """
     Tokenize text annotations using GPT-2 tokenizer.
     """
     tokenized_outputs = []
-    for text in data[column_name].dropna():
+    image_ids = []
+    for idx, row in data.iterrows():
+        text = row[column_name]
+        image_id = row['image_id']
+        if pd.isna(text):
+            continue  # Skip if text is NaN
         # Tokenize and pad sequences
         tokens = tokenizer(
             text,
@@ -40,14 +52,17 @@ def tokenize_annotations(data, tokenizer, column_name="annotation"):
             max_length=MAX_LENGTH,
         )
         tokenized_outputs.append(tokens["input_ids"])  # Save tokenized input IDs
-    return torch.cat(tokenized_outputs, dim=0)
+        image_ids.append(image_id)
+    # Stack the tensors to create a single tensor
+    tokenized_data = torch.cat(tokenized_outputs, dim=0)  # Shape: [N, max_length]
+    return tokenized_data, image_ids
 
-def save_tokenized_data(tokenized_data, output_path):
+def save_tokenized_data(tokenized_data_dict, output_path):
     """
-    Save tokenized data as a PyTorch tensor file.
+    Save tokenized data and image IDs as a PyTorch tensor file.
     """
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    torch.save(tokenized_data, output_path)
+    torch.save(tokenized_data_dict, output_path)
     print(f"Tokenized data saved to {output_path}.")
 
 if __name__ == "__main__":
@@ -60,7 +75,7 @@ if __name__ == "__main__":
     data = load_data(HUMAN_ANNOTATIONS_PATH, ARTIFICIAL_ANNOTATIONS_PATH)
 
     # Tokenize annotations
-    tokenized_data = tokenize_annotations(data, tokenizer)
+    tokenized_data, image_ids = tokenize_annotations(data, tokenizer)
 
-    # Save tokenized data
-    save_tokenized_data(tokenized_data, OUTPUT_PATH)
+    # Save tokenized data and image IDs
+    save_tokenized_data({'input_ids': tokenized_data, 'image_ids': image_ids}, OUTPUT_PATH)

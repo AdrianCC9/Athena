@@ -5,40 +5,30 @@ from PIL import Image
 from torchvision.transforms import Compose, ToTensor, Normalize, Resize
 
 class FloorplanDataset(torch.utils.data.Dataset):
-    def __init__(self, human_embeddings_path, artificial_embeddings_path, images_csv_path, image_dir, transform=None, image_size=(128, 128)):
+    def __init__(self, embeddings_path, images_csv_path, image_dir, transform=None, image_size=(128, 128)):
         """
         Custom PyTorch Dataset for loading floorplan images and their associated text embeddings.
-        :param human_embeddings_path: Path to the .pt file containing human text embeddings.
-        :param artificial_embeddings_path: Path to the .pt file containing artificial text embeddings.
-        :param images_csv_path: Path to the CSV file containing cleaned image metadata.
-        :param image_dir: Directory where the floorplan images are stored.
-        :param transform: Optional transforms to apply to the images.
-        :param image_size: Tuple indicating the desired size (H, W) of the images.
+
+        Args:
+            embeddings_path (str): Path to the .pt file containing combined text embeddings and image IDs.
+            images_csv_path (str): Path to the CSV file containing cleaned image metadata.
+            image_dir (str): Directory where the floorplan images are stored.
+            transform (callable, optional): Optional transforms to apply to the images.
+            image_size (tuple, optional): Desired size (H, W) of the images.
         """
-        # Load human and artificial embeddings
-        human_embeddings = torch.load(human_embeddings_path)
-        artificial_embeddings = torch.load(artificial_embeddings_path)
+        # Load tokenized embeddings and image IDs
+        data = torch.load(embeddings_path)
+        self.embeddings = data['input_ids']  # Tokenized input IDs (shape: [N, max_length])
+        self.image_ids = data['image_ids']  # List of image IDs
 
         # Load image metadata
-        self.images_df = pd.read_csv(images_csv_path)
-        self.image_dir = image_dir
+        images_df = pd.read_csv(images_csv_path)
+        images_df['image_id'] = images_df['image_path'].apply(lambda x: os.path.basename(x))
+        self.image_paths = images_df.set_index('image_id')['image_path'].to_dict()
 
-        # Map embeddings to image IDs
-        human_annotations = dict(zip(self.images_df["image_id"], human_embeddings))
-        artificial_annotations = dict(zip(self.images_df["image_id"], artificial_embeddings))
-
-        # Combine human and artificial annotations
-        self.embeddings = []
-        for image_id in self.images_df["image_id"]:
-            if image_id in human_annotations:
-                self.embeddings.append(human_annotations[image_id])  # Use human annotation if available
-            elif image_id in artificial_annotations:
-                self.embeddings.append(artificial_annotations[image_id])  # Fallback to artificial
-            else:
-                raise ValueError(f"No annotation found for image ID: {image_id}")
-
-        # Ensure embeddings are a PyTorch tensor
-        self.embeddings = torch.stack(self.embeddings)
+        # Verify that embeddings and image IDs are aligned
+        assert len(self.embeddings) == len(self.image_ids), \
+            f"Mismatch: {len(self.embeddings)} embeddings and {len(self.image_ids)} image IDs."
 
         # Default transformations: Resize, Convert to Tensor, Normalize
         self.transform = transform if transform else Compose([
@@ -47,45 +37,59 @@ class FloorplanDataset(torch.utils.data.Dataset):
             Normalize(mean=[0.5], std=[0.5])  # Normalize pixel values to [-1, 1]
         ])
 
-        # Final alignment check
-        assert len(self.embeddings) == len(self.images_df), \
-            f"Mismatch: {len(self.embeddings)} embeddings and {len(self.images_df)} images."
+        # Store image directory
+        self.image_dir = image_dir
 
     def __len__(self):
         """Return the total number of samples in the dataset."""
-        return len(self.images_df)
+        return len(self.embeddings)
 
     def __getitem__(self, idx):
         """
         Fetch a single sample (embedding and image tensor) from the dataset.
-        
-        :param idx: Index of the sample.
-        :return: Tuple (embedding, image_tensor)
+
+        Args:
+            idx (int): Index of the sample.
+
+        Returns:
+            tuple: (embedding, image_tensor)
         """
         # Load the text embedding
-        embedding = self.embeddings[idx]
+        embedding = self.embeddings[idx]  # Shape: [max_length]
+
+        # Get the corresponding image ID
+        image_id = self.image_ids[idx]
+
+        # Get the image path
+        image_path = self.image_paths.get(image_id)
+        if image_path is None:
+            raise ValueError(f"No image path found for image ID: {image_id}")
+        full_image_path = os.path.join(self.image_dir, os.path.basename(image_path))
+
+        # Check if the image file exists
+        if not os.path.exists(full_image_path):
+            raise FileNotFoundError(f"Image file not found: {full_image_path}")
 
         # Load the image
-        image_path = os.path.join(self.image_dir, self.images_df.iloc[idx]['image_path'])
-        image = Image.open(image_path).convert('L')  # Convert to grayscale
+        image = Image.open(full_image_path).convert('L')  # Convert to grayscale
 
         # Apply image transformations
-        image_tensor = self.transform(image)
+        image_tensor = self.transform(image)  # Shape: [1, H, W]
 
         return embedding, image_tensor
 
-
 if __name__ == "__main__":
+    import warnings
+    warnings.filterwarnings("ignore", category=FutureWarning)
+
     # Paths for dataset components
-    human_embeddings_path = r"Q:/Athena/data/tokenized_data/tokenized_human_annotations.pt"
-    artificial_embeddings_path = "Q:/Athena/data/tokenized_data/tokenized_artificial_annotations.pt"
+    embeddings_path = r"Q:/Athena/data/tokenized_data/tokenized_combined_annotations.pt"
     images_csv_path = r"Q:/Athena/data/cleaned_data/cleaned_floorplan_images.csv"
     image_dir = r"Q:/adria/Documents/Tell2Design Data/General Data/floorplan_image"
 
     # Initialize the dataset
     dataset = FloorplanDataset(
-        human_embeddings_path=human_embeddings_path,
-        artificial_embeddings_path=artificial_embeddings_path,
+        embeddings_path=embeddings_path,
         images_csv_path=images_csv_path,
         image_dir=image_dir,
     )

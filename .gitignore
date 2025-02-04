@@ -171,3 +171,10 @@ cython_debug/
 .pypirc
 
 data/
+
+checkpoints/
+logs/
+models/
+runs/
+
+.DS_Store

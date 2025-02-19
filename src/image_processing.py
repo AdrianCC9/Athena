@@ -6,7 +6,7 @@ import torchvision.transforms as transforms
 # ------------------ EDIT THESE PATHS AS NEEDED ------------------
 IMAGE_DIR  = "/Users/adrian/Athena/data/General Data/floorplan_image"       
 OUTPUT_PT  = "/Users/adrian/Athena/data/Processed Data/processed_images.pt"  
-IMAGE_SIZE = (128, 128)  # Target size for images
+IMAGE_SIZE = (256, 256)  # Target size for images
 # ----------------------------------------------------------------
 
 def load_and_preprocess_images(image_dir):

@@ -4,9 +4,9 @@ import pickle
 import pandas as pd
 
 # ------------------ EDIT THESE PATHS AS NEEDED ------------------
-ARTIFICIAL_PKL_PATH = "/Users/adrian/Athena/data/General Data/Tell2Design_artificial_all.pkl"     
-IMAGES_DIR          = "/Users/adrian/Athena/data/General Data/floorplan_image"                    
-OUTPUT_CSV          = "/Users/adrian/Athena/data/Cleaned Data/cleaned_annotations.csv" 
+ARTIFICIAL_PKL_PATH = r"Q:\Athena\data\General Data\Tell2Design_artificial_all.pkl"   
+IMAGES_DIR          = r"Q:\Athena\data\General Data\floorplan_image"                    
+OUTPUT_CSV          = r"Q:\Athena\data\Processed Data\cleaned_annotations.csv" 
 # ----------------------------------------------------------------
 
 def load_artificial_annotations(pkl_path):

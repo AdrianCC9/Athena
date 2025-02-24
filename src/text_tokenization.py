@@ -4,8 +4,8 @@ from transformers import T5Tokenizer
 import os
 
 # ------------------ EDIT THESE PATHS AS NEEDED ------------------
-INPUT_CSV  = "/Users/adrian/Athena/data/Processed Data/cleaned_annotations.csv"  
-OUTPUT_PT  = "/Users/adrian/Athena/data/Processed Data/tokenized_texts.pt"           
+INPUT_CSV  = r"Q:\Athena\data\Processed Data\cleaned_annotations.csv"  
+OUTPUT_PT  = r"Q:\Athena\data\Processed Data\tokenized_texts.pt"           
 # ----------------------------------------------------------------
 
 # Tokenizer settings

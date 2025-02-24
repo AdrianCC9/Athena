@@ -4,7 +4,7 @@ import torch
 from PIL import Image
 import matplotlib.pyplot as plt
 
-IMAGE_DIR  = "/Users/adrian/Athena/data/General Data/floorplan_image"       
+IMAGE_DIR  = r"Q:\Athena\data\General Data\floorplan_image"       
 NUM_IMAGES = 6                                
 
 def visualize_images(image_dir, num_images=6):

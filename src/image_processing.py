@@ -4,8 +4,8 @@ from PIL import Image
 import torchvision.transforms as transforms
 
 # ------------------ EDIT THESE PATHS AS NEEDED ------------------
-IMAGE_DIR  = "/Users/adrian/Athena/data/General Data/floorplan_image"       
-OUTPUT_PT  = "/Users/adrian/Athena/data/Processed Data/processed_images.pt"  
+IMAGE_DIR  = r"Q:\Athena\data\General Data\floorplan_image"       
+OUTPUT_PT  = r"Q:\Athena\data\Processed Data\processed_images.pt"  
 IMAGE_SIZE = (256, 256)  # Target size for images
 # ----------------------------------------------------------------
 
